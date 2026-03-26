@@ -46,7 +46,7 @@ object ModuleParkour : ClientModule("Parkour", ModuleCategories.MOVEMENT) {
             event.jump = true
         }
 
-        if (ladderFreeze && mc.options.keyShift.isDown) {
+        if (ladderFreeze && mc.options.keyShift.isDown && mc.player!!.onClimbable()) {
             mc.player!!.setDeltaMovement(0.0, mc.player!!.deltaMovement.y, 0.0)
         }
     }
