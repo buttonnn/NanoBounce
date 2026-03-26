@@ -1,5 +1,5 @@
 <script lang="ts">
-    import { subtleFly } from "../../../../lib/transitions";
+    import {fly} from "svelte/transition";
     import {notification, type TNotification} from "./notification_store";
     import {onMount} from "svelte";
 
@@ -32,7 +32,7 @@
 
 <div class="notifications">
     {#each notifications as n (n.id)}
-        <div class="notification" transition:subtleFly|global={{duration: 420, y: -60, baseOpacity: 0.9}}>
+        <div class="notification" transition:fly|global={{duration: 500, y: -100}}>
             <div class="icon" class:error={n.notification.error}>
                 <img src="img/hud/notification/icon-info.svg" alt="info">
             </div>

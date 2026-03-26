@@ -5,7 +5,7 @@
     import {listen} from "../../../integration/ws";
     import {getTextWidth} from "../../../integration/text_measurement";
     import {flip} from "svelte/animate";
-    import {fly} from "../../../lib/transitions";
+    import {fly} from "svelte/transition";
     import {convertToSpacedString, spaceSeperatedNames} from "../../../theme/theme_config";
 
     export let settings: { [name: string]: any };

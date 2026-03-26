@@ -6,7 +6,7 @@
     export let tabs: {
         title: string,
         icon: string,
-        component: any,
+        component: ComponentType,
     }[];
     export let activeTab = 0;
 

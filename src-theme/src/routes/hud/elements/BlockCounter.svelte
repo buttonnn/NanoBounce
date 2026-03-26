@@ -1,6 +1,6 @@
 <script lang="ts">
     import {listen} from "../../../integration/ws";
-    import {fly} from "../../../lib/transitions";
+    import {fly} from "svelte/transition";
     import {mapToColor} from "../../../util/color_utils";
     import {itemTextureUrl} from "../../../integration/rest";
 

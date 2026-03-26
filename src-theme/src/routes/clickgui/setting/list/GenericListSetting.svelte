@@ -1,6 +1,6 @@
 <script lang="ts">
     import {createEventDispatcher} from "svelte";
-    import {slide} from "../../../../lib/transitions";
+    import {slide} from "svelte/transition";
     import type {ListSetting, ModuleSetting, NamedItem} from "../../../../integration/types";
     import VirtualList from "../list/VirtualList.svelte";
     import {convertToSpacedString, spaceSeperatedNames} from "../../../../theme/theme_config";

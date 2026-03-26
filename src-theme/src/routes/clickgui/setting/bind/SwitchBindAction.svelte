@@ -1,6 +1,6 @@
 <script lang="ts">
     import type {BindAction} from "../../../../integration/types";
-    import {fly} from "../../../../lib/transitions";
+    import {fly} from "svelte/transition";
     import {cubicOut} from 'svelte/easing';
 
     export let choices: BindAction[];

@@ -1,6 +1,6 @@
 <script lang="ts">
     import type {Snippet} from "svelte";
-    import {fade} from "../../../lib/transitions";
+    import {fade} from "svelte/transition";
     import {quintOut} from "svelte/easing";
 
     let { title, icon, children } = $props<{

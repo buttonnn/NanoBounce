@@ -3,7 +3,7 @@
     import Panel from "./Panel.svelte";
     import Search from "./Search.svelte";
     import Description from "./Description.svelte";
-    import {fade} from "../../lib/transitions";
+    import {fade} from "svelte/transition";
     import {onMount} from "svelte";
     import {getModules} from "../../integration/rest";
     import {groupByCategory} from "../../integration/util";

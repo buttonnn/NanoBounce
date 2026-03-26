@@ -12,8 +12,7 @@
     import {listen} from "../../../../../integration/ws";
     import {location} from "svelte-spa-router";
     import {quintOut} from "svelte/easing";
-    import {slide} from "svelte/transition";
-    import { subtleFade } from "../../../../../lib/transitions";
+    import {fade, slide} from "svelte/transition";
     import type {Account} from "../../../../../integration/types";
     import Avatar from "./Avatar.svelte";
     import {notification} from "../notification_store";
@@ -34,7 +33,7 @@
 
     $: renderedAccounts = accounts.filter(a => a.username.toLowerCase().includes(searchQuery.toLowerCase()) || searchQuery === "");
 
-    $: inAccountManager = $location === "/altmanager" || $location === "/title";
+    const inAccountManager = $location === "/altmanager";
 
     async function refreshSession() {
         const session = await getSession();
@@ -108,11 +107,11 @@
 <div class="account" class:expanded bind:this={accountElement} on:click={handleSelectClick}>
     <div class="header" bind:this={headerElement}>
         {#if $isLoggingIn}
-                <div class="avatar" transition:subtleFade={{ duration: 260, base: 0.85 }}>
+            <div class="avatar" transition:fade={{ duration: 200 }}>
                 <RippleLoader size={68} />
             </div>
         {:else}
-                    <object data={avatar} type="image/png" class="avatar" aria-label="avatar" in:subtleFade={{ duration: 260, base: 0.85, delay: 120 }}>
+            <object data={avatar} type="image/png" class="avatar" aria-label="avatar" in:fade={{ duration: 200, delay: 200 }}>
                 <img src="img/steve.png" alt=avatar class="avatar">
             </object>
         {/if}
@@ -140,7 +139,7 @@
     </div>
 
     {#if expanded}
-        <div class="quick-switcher" transition:subtleFade|global={{ duration: 220, base: 0.88, easing: quintOut }}>
+        <div class="quick-switcher" transition:fade|global={{ duration: 200, easing: quintOut }}>
             <!-- svelte-ignore a11y_autofocus -->
             <input type="text" autofocus class="account-search" placeholder="Search..." bind:value={searchQuery}>
 
