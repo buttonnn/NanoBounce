@@ -32,19 +32,22 @@ import net.ccbluex.liquidbounce.utils.entity.moving
  */
 object ModuleParkour : ClientModule("Parkour", ModuleCategories.MOVEMENT) {
 
+    private val ladderFreeze by boolean("LadderFreeze", true)
+
     @Suppress("unused")
     private val simulatedTickHandler = handler<MovementInputEvent> { event ->
         val simulatedPlayer = PlayerSimulationCache.getSimulationForLocalPlayer()
-        val shouldJump = player.moving &&
-                player.onGround() &&
-                !player.isShiftKeyDown &&
-                !mc.options.keyShift.isDown &&
-                !mc.options.keyJump.isDown &&
-                !simulatedPlayer.getSnapshotAt(1).onGround
+        val shouldJump =
+            player.moving && player.onGround() && !player.isShiftKeyDown && !mc.options.keyShift.isDown && !mc.options.keyJump.isDown && !simulatedPlayer.getSnapshotAt(
+                1
+            ).onGround
 
         if (shouldJump) {
             event.jump = true
         }
-    }
 
+        if (ladderFreeze && mc.options.keyShift.isDown) {
+            mc.player!!.setDeltaMovement(0.0, mc.player!!.deltaMovement.y, 0.0)
+        }
+    }
 }

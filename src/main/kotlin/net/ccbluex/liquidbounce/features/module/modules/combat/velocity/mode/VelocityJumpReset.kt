@@ -23,6 +23,7 @@ import net.ccbluex.liquidbounce.event.events.MovementInputEvent
 import net.ccbluex.liquidbounce.event.events.PacketEvent
 import net.ccbluex.liquidbounce.event.handler
 import net.ccbluex.liquidbounce.features.module.modules.render.ModuleDebug
+import net.ccbluex.liquidbounce.utils.entity.hasCooldown
 import net.minecraft.network.protocol.game.ClientboundSetEntityMotionPacket
 import kotlin.random.Random
 
@@ -41,6 +42,8 @@ internal object VelocityJumpReset : VelocityMode("JumpReset") {
         val ticksUntilJump by intRange("UntilJump", 2..2, 0..20, "ticks")
     }
 
+    val jumpAutoSprint by boolean("JumpAutoSprint", false)
+
     init {
         tree(JumpByReceivedHits)
         tree(JumpByDelay)
@@ -51,54 +54,58 @@ internal object VelocityJumpReset : VelocityMode("JumpReset") {
 
     private var hitsUntilJump = JumpByReceivedHits.hitsUntilJump.random()
     private var ticksUntilJump = JumpByDelay.ticksUntilJump.random()
-
-    @Suppress("ComplexCondition", "unused")
-    private val movementInputHandler = handler<MovementInputEvent> { event ->
-        // To be able to alter velocity when receiving knockback, player must be sprinting.
-        if (player.hurtTime != 9 || !player.onGround() || !player.isSprinting ||
-            isFallDamage || !isCooldownOver() || chance != 100f && Random.nextInt(100) > chance)
-        {
-            updateLimit()
-            return@handler
-        }
-
-        event.jump = true
-        limitUntilJump = 0
-
-        hitsUntilJump = JumpByReceivedHits.hitsUntilJump.random()
-        ticksUntilJump = JumpByDelay.ticksUntilJump.random()
-    }
-
     @Suppress("unused")
-    private val packetHandler = handler<PacketEvent> { event ->
-        val packet = event.packet
+    private val tickJumpHandler = handler<MovementInputEvent> { event ->
+        // To be able to alter velocity when receiving knockback, player must be sprinting.
+        if (player.hurtTime == 9 && player.onGround()) {
+            val wasShiftKeyDown = event.sneak
+            val wasSprintKeyDown = mc.options.keySprint.isDown
+            val wasLeftImpulseDown = event.directionalInput.left
+            val wasRightImpulseDown = event.directionalInput.right
 
-        if (packet is ClientboundSetEntityMotionPacket && packet.id == player.id) {
-            val velocityX = packet.movement.x
-            val velocityY = packet.movement.y
-            val velocityZ = packet.movement.z
+            val damageSource = player.lastDamageSource
+            val msgId = damageSource?.type()?.msgId
+            val isDamageTypePlayer = msgId == "player" || msgId == "arrow" || msgId == "mob" ||
+                msgId == "trident" || msgId == "fireworks" || msgId == "fireball" ||
+                msgId == "thrown" || msgId == "explosion"
 
-            // Check if the player is taking fall damage
-            // We set this on every packet, because if the player gets hit afterward,
-            // we will know that from the velocity.
-            isFallDamage = velocityX == 0.0 && velocityZ == 0.0 && velocityY < 0
-            ModuleDebug.debugParameter(this, "VelocityX", velocityX)
-            ModuleDebug.debugParameter(this, "VelocityY", velocityY)
-            ModuleDebug.debugParameter(this, "VelocityZ", velocityZ)
-            ModuleDebug.debugParameter(this, "IsFallDamage", isFallDamage)
+               if (!isNoItemHitCooldown() && !isDamageTypePlayer) {
+                   return@handler
+               }
+
+            if (jumpAutoSprint) {
+                if (!player.isSprinting) {
+                    event.directionalInput = event.directionalInput.copy(forwards = true)
+                    mc.options.keySprint.isDown = true
+                }
+                event.directionalInput = event.directionalInput.copy(left = false, right = false)
+            }
+
+            event.sneak = false
+            event.jump = true
+
+            if (jumpAutoSprint) {
+                event.sneak = wasShiftKeyDown
+                mc.options.keySprint.isDown = wasSprintKeyDown
+                event.directionalInput =
+                    event.directionalInput.copy(left = wasLeftImpulseDown, right = wasRightImpulseDown)
+            }
+
+            updateLimit()
+
+
+            event.jump = true
         }
+
+        limitUntilJump = 0
     }
 
-    private fun isCooldownOver(): Boolean {
-        ModuleDebug.debugParameter(this, "HitsUntilJump", hitsUntilJump)
-        ModuleDebug.debugParameter(this, "UntilJump", ticksUntilJump)
 
-        return when {
-            JumpByReceivedHits.enabled -> limitUntilJump >= hitsUntilJump
-            JumpByDelay.enabled -> limitUntilJump >= ticksUntilJump
-            else -> true // If none of the options are enabled, it will go automatic
-        }
-    }
+    /**
+     * Checks if the player has no item hit cooldown, meaning the player is in 1.8-style PvP
+     * (no attack cooldown) or the attack speed is high enough that there is effectively no cooldown.
+     */
+    private fun isNoItemHitCooldown(): Boolean = !player.hasCooldown
 
     private fun updateLimit() {
         if (JumpByReceivedHits.enabled) {
