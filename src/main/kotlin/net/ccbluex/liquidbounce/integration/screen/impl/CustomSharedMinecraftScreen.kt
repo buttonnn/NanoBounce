@@ -23,6 +23,7 @@ import net.ccbluex.liquidbounce.integration.screen.CustomScreenType
 import net.ccbluex.liquidbounce.integration.screen.ScreenManager
 import net.ccbluex.liquidbounce.integration.theme.Theme
 import net.ccbluex.liquidbounce.integration.theme.ThemeManager
+import net.ccbluex.liquidbounce.additions.setPosition
 import net.ccbluex.liquidbounce.utils.client.asPlainText
 import net.ccbluex.liquidbounce.utils.client.mc
 import net.minecraft.client.gui.screens.Screen
@@ -43,7 +44,14 @@ class CustomSharedMinecraftScreen(
             mc.setScreen(parentScreen)
         } else {
             ScreenManager.closeScreen()
+            val prevX = mc.mouseHandler.xpos()
+            val prevY = mc.mouseHandler.ypos()
             mc.mouseHandler.grabMouse()
+            try {
+                mc.mouseHandler.setPosition(prevX, prevY)
+            } catch (_: Throwable) {
+                // ignore
+            }
             super.onClose()
         }
     }

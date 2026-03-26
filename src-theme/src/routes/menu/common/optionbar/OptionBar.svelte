@@ -1,5 +1,5 @@
 <script lang="ts">
-    import {fly} from "svelte/transition";
+    import {fly} from "../../../../lib/transitions";
 </script>
 
 <div class="option-bar" transition:fly|global={{duration: 700, x: 1000}}>

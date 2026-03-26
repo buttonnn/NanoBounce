@@ -1,7 +1,7 @@
 <script lang="ts">
     import {flip} from "svelte/animate";
     import {listen} from "../../../../integration/ws";
-    import {fly} from "svelte/transition";
+    import {fly} from "../../../../lib/transitions";
     import Notification from "./Notification.svelte";
     import type {NotificationEvent} from "../../../../integration/events";
 

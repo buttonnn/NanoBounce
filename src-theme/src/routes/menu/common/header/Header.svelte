@@ -1,6 +1,7 @@
 <script lang="ts">
     import Account from "./account/Account.svelte";
     import Notifications from "./Notifications.svelte";
+    import { subtleFade } from "../../../../lib/transitions";
     import {listen} from "../../../../integration/ws";
     import type {
         AccountManagerAdditionEvent,
@@ -51,11 +52,15 @@
 </script>
 
 <div class="header">
-    <img class="logo" src="img/lb-logo.svg" alt="logo">
+    <img class="logo" src="img/lb-logo.svg" alt="logo" in:subtleFade={{ duration: 380, base: 0.92 }}>
 
-    <Notifications />
+    <div in:subtleFade={{ duration: 360, base: 0.92 }}>
+        <Notifications />
+    </div>
 
-    <Account/>
+    <div in:subtleFade={{ duration: 360, base: 0.92, delay: 60 }}>
+        <Account />
+    </div>
 </div>
 
 <style lang="scss">

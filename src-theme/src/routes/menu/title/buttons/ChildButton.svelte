@@ -1,5 +1,5 @@
 <script lang="ts">
-    import {fade} from "svelte/transition";
+    import { subtleFade } from "../../../../lib/transitions";
     import {createEventDispatcher} from "svelte";
     import ToolTip from "../../common/ToolTip.svelte";
 
@@ -17,9 +17,9 @@
 
     <div class="icon">
         {#if parentHovered}
-            <img transition:fade="{{ duration: 200 }}" src="img/menu/icon-{icon}-hover.svg" alt={title}>
+            <img transition:subtleFade={{ duration: 160, base: 0.85 }} src="img/menu/icon-{icon}-hover.svg" alt={title}>
         {:else}
-            <img transition:fade="{{ duration: 200 }}" src="img/menu/icon-{icon}.svg" alt={title}>
+            <img transition:subtleFade={{ duration: 160, base: 0.85 }} src="img/menu/icon-{icon}.svg" alt={title}>
         {/if}
     </div>
 

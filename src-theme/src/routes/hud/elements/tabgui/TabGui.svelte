@@ -6,7 +6,7 @@
     import Category from "./Category.svelte";
     import {getTextWidth} from "../../../../integration/text_measurement";
     import {listen} from "../../../../integration/ws";
-    import {fly} from "svelte/transition";
+    import {fly} from "../../../../lib/transitions";
     import Module from "./Module.svelte";
     import type {KeyEvent, ModuleToggleEvent} from "../../../../integration/events";
 

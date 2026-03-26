@@ -1,5 +1,5 @@
 <script lang="ts">
-    import {fly} from "svelte/transition";
+    import {fly} from "../../../../lib/transitions";
     import {SortableList} from "@jhubbardsf/svelte-sortablejs";
     import "./menulist.scss";
     import {createEventDispatcher} from "svelte";

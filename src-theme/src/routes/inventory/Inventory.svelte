@@ -1,5 +1,5 @@
 <script>
-    import {fade} from 'svelte/transition';
+    import {fade} from '../../lib/transitions';
 </script>
 
 <img class="watermark" src="img/lb-logo.svg" alt="watermark"

@@ -62,6 +62,12 @@ class CustomStandaloneMinecraftScreen(
         mouseX = mc.mouseHandler.xpos()
         mouseY = mc.mouseHandler.ypos()
         mc.mouseHandler.grabMouse()
+        // restore previous mouse position after grabbing to avoid recentering
+        try {
+            mc.mouseHandler.setPosition(mouseX, mouseY)
+        } catch (_: Throwable) {
+            // ignore any issues with restoring mouse position
+        }
         super.onClose()
     }
 

@@ -3,7 +3,7 @@
     import {listen} from "../../../../integration/ws.js";
     import type {PlayerData} from "../../../../integration/types";
     import {REST_BASE} from "../../../../integration/host";
-    import {fly} from "svelte/transition";
+    import {fly} from "../../../../lib/transitions";
     import HealthProgress from "./HealthProgress.svelte";
     import type {TargetChangeEvent} from "../../../../integration/events";
 

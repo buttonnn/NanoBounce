@@ -1,5 +1,5 @@
 <script lang="ts">
-    import {fly} from "svelte/transition";
+    import {fly} from "../../../lib/transitions";
     import {afterUpdate} from "svelte";
 
     export let text: string;

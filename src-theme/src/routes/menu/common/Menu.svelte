@@ -1,32 +1,27 @@
 <script lang="ts">
     import Header from "./header/Header.svelte";
-    import {fly} from "svelte/transition";
-    import {onMount} from "svelte";
+    import { subtleFly } from "../../../lib/transitions";
 
-    const transitionDuration = 700; // TODO: suboptimal
-
-    let ready = false;
-
-    onMount(() => {
-        setTimeout(() => {
-            ready = true;
-        }, transitionDuration);
-    });
+    export let transitionDuration: number = 300; // default entrance duration in ms
 </script>
 
 <div class="menu">
-    {#if ready}
-        <div transition:fly|global={{duration: 700, y: -100}}>
-            <Header/>
-        </div>
+    <div transition:subtleFly|global={{duration: transitionDuration, y: -60, baseOpacity: 0.92}}>
+        <Header/>
+    </div>
 
-        <div class="menu-wrapper">
-            <slot/>
-        </div>
-    {/if}
+    <div class="menu-wrapper">
+        <slot/>
+    </div>
 </div>
 
 <style lang="scss">
+  :global(.lb-fast-transitions) * {
+    transition-duration: 0s !important;
+    transition-delay: 0s !important;
+    animation-duration: 0s !important;
+    animation-delay: 0s !important;
+  }
   .menu {
     padding: 50px;
     display: flex;

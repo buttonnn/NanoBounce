@@ -1,42 +1,42 @@
 <!-- Adapted from https://github.com/sveltejs/svelte-virtual-list -->
-<script lang="js">
+<script lang="ts">
     import {onMount, tick} from 'svelte';
     // props
-    export let items;
-    export let height = '100%';
-    export let itemHeight = undefined;
+    export let items: any[] = [];
+    export let height: string = '100%';
+    export let itemHeight: number | undefined = undefined;
     // read-only, but visible to consumers via bind:start
-    export let start = 0;
-    export let end = 0;
+    export let start: number = 0;
+    export let end: number = 0;
     // local state
-    let height_map = [];
-    let rows;
-    let viewport;
-    let contents;
-    let viewport_height = 0;
-    let visible;
-    let mounted;
-    let top = 0;
-    let bottom = 0;
-    let average_height;
-    $: visible = items.slice(start, end).map((data, i) => {
+    let height_map: number[] = [];
+    let rows: HTMLCollectionOf<Element> | null = null;
+    let viewport: HTMLElement | null = null;
+    let contents: HTMLElement | null = null;
+    let viewport_height: number = 0;
+    let visible: { index: number; data: any }[] = [];
+    let mounted: boolean = false;
+    let top: number = 0;
+    let bottom: number = 0;
+    let average_height: number = 0;
+    $: visible = items.slice(start, end).map((data: any, i: number) => {
         return { index: i + start, data };
     });
     // whenever `items` changes, invalidate the current heightmap
     $: if (mounted) refresh(items, viewport_height, itemHeight);
-    async function refresh(items, viewport_height, itemHeight) {
-        const { scrollTop } = viewport;
+    async function refresh(items: any[], viewport_height: number, itemHeight?: number) {
+        const { scrollTop } = viewport as HTMLElement;
         await tick(); // wait until the DOM is up to date
         let content_height = top - scrollTop;
         let i = start;
         while (content_height < viewport_height && i < items.length) {
-            let row = rows[i - start];
+            let row = rows ? rows[i - start] : undefined;
             if (!row) {
                 end = i + 1;
                 await tick(); // render the newly visible row
-                row = rows[i - start];
+                row = rows ? rows[i - start] : undefined;
             }
-            const row_height = height_map[i] = itemHeight || row.offsetHeight;
+            const row_height = height_map[i] = itemHeight || (row ? (row as HTMLElement).offsetHeight : 0);
             content_height += row_height;
             i += 1;
         }
@@ -47,14 +47,16 @@
         height_map.length = items.length;
 
         setTimeout(() => {
-            viewport.scrollTop = 0;
+            if (viewport) viewport.scrollTop = 0;
         }, 100);
     }
     async function handle_scroll() {
-        const { scrollTop } = viewport;
+        const { scrollTop } = viewport as HTMLElement;
         const old_start = start;
-        for (let v = 0; v < rows.length; v += 1) {
-            height_map[start + v] = itemHeight || rows[v].offsetHeight;
+        if (rows) {
+            for (let v = 0; v < rows.length; v += 1) {
+                height_map[start + v] = itemHeight || (rows[v] as HTMLElement).offsetHeight;
+            }
         }
         let i = 0;
         let y = 0;
@@ -84,13 +86,13 @@
             let expected_height = 0;
             let actual_height = 0;
             for (let i = start; i < old_start; i +=1) {
-                if (rows[i - start]) {
+                if (rows && rows[i - start]) {
                     expected_height += height_map[i];
-                    actual_height += itemHeight || rows[i - start].offsetHeight;
+                    actual_height += itemHeight || (rows[i - start] as HTMLElement).offsetHeight;
                 }
             }
             const d = actual_height - expected_height;
-            viewport.scrollTo(0, scrollTop + d);
+            if (viewport) viewport.scrollTo(0, scrollTop + d);
         }
         // TODO if we overestimated the space these
         // rows would occupy we may need to add some
@@ -98,7 +100,7 @@
     }
     // trigger initial refresh
     onMount(() => {
-        rows = contents.getElementsByTagName('svelte-virtual-list-row');
+        rows = contents ? contents.getElementsByTagName('svelte-virtual-list-row') : null;
         mounted = true;
     });
 </script>

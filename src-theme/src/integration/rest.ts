@@ -29,6 +29,9 @@ import type {
 } from "./types";
 import type {PlayerInventory} from "./events";
 import {isLoggingIn} from "../routes/menu/altmanager/altmanager_store";
+import { push } from 'svelte-spa-router';
+import { cleanupListeners } from './ws';
+import { setForceFastTransitions } from '../lib/transitions/config';
 
 const API_BASE = `${REST_BASE}/api/v1`;
 
@@ -245,13 +248,34 @@ export async function exitClient() {
 }
 
 export async function openScreen(name: string) {
-    await fetch(`${API_BASE}/client/screen`, {
+    // Immediately perform local route change so the UI doesn't wait for the backend roundtrip
+    // make UI transitions and delays effectively instantaneous while navigating
+    setForceFastTransitions(true);
+
+    try {
+        cleanupListeners();
+    } catch (e) {
+        // ignore if cleanup not available for some reason
+    }
+
+    try {
+        // push the route without awaiting so the UI can continue immediately
+        push(`/${name}`);
+    } catch (e) {
+        // ignore routing errors
+    }
+
+    // restore normal transition behavior shortly after navigation
+    setTimeout(() => setForceFastTransitions(false), 150);
+
+    // Notify backend (fire-and-forget). We don't await this to avoid blocking the UI.
+    fetch(`${API_BASE}/client/screen`, {
         method: "PUT",
         headers: {
             "Content-Type": "application/json"
         },
         body: JSON.stringify({name})
-    });
+    }).catch((err) => console.warn('[rest] openScreen backend request failed', err));
 }
 
 export async function deleteScreen() {

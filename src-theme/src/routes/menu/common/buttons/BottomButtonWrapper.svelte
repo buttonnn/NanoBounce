@@ -1,5 +1,5 @@
 <script lang="ts">
-    import {fly} from "svelte/transition";
+    import {fly} from "../../../../lib/transitions";
 </script>
 
 <div class="bottom-button-wrapper" transition:fly|global={{duration: 700, y: 100}}>

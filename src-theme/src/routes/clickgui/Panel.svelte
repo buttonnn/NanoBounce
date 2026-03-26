@@ -4,7 +4,7 @@
     import {listen} from "../../integration/ws";
     import Module from "./Module.svelte";
     import type {ModuleToggleEvent} from "../../integration/events";
-    import {fade} from "svelte/transition";
+    import {fade} from "../../lib/transitions";
     import {quintOut} from "svelte/easing";
     import {
         gridSize,

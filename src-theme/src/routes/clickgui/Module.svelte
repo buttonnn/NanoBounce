@@ -7,7 +7,7 @@
     } from "../../integration/rest";
     import type {ConfigurableSetting} from "../../integration/types";
     import GenericSetting from "./setting/common/GenericSetting.svelte";
-    import {slide} from "svelte/transition";
+    import {slide} from "../../lib/transitions";
     import {quintOut} from "svelte/easing";
     import {description as descriptionStore, highlightModuleName} from "./clickgui_store";
     import {setItem} from "../../integration/persistent_storage";
