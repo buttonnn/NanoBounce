@@ -30,17 +30,19 @@ import net.ccbluex.liquidbounce.utils.block.collisionShape
 import net.ccbluex.liquidbounce.utils.block.getBlock
 import net.ccbluex.liquidbounce.utils.block.isBlastResistant
 import net.ccbluex.liquidbounce.utils.block.raycast
+import net.ccbluex.liquidbounce.utils.client.isBlocksAttacksExisting
 import net.ccbluex.liquidbounce.utils.client.isOlderThanOrEqual1_8
 import net.ccbluex.liquidbounce.utils.client.mc
 import net.ccbluex.liquidbounce.utils.client.player
 import net.ccbluex.liquidbounce.utils.client.toRadians
 import net.ccbluex.liquidbounce.utils.item.getEnchantment
+import net.ccbluex.liquidbounce.utils.item.isSword
+import net.ccbluex.liquidbounce.utils.math.allEmpty
 import net.ccbluex.liquidbounce.utils.math.anyNotEmpty
 import net.ccbluex.liquidbounce.utils.math.copy
 import net.ccbluex.liquidbounce.utils.math.fma
 import net.ccbluex.liquidbounce.utils.math.iterateBottomLayerBlockPos
 import net.ccbluex.liquidbounce.utils.math.minus
-import net.ccbluex.liquidbounce.utils.math.allEmpty
 import net.ccbluex.liquidbounce.utils.movement.DirectionalInput
 import net.ccbluex.liquidbounce.utils.movement.findEdgeCollision
 import net.minecraft.client.player.ClientInput
@@ -55,6 +57,7 @@ import net.minecraft.server.level.ServerLevel
 import net.minecraft.tags.DamageTypeTags
 import net.minecraft.util.Mth
 import net.minecraft.world.Difficulty
+import net.minecraft.world.InteractionHand
 import net.minecraft.world.damagesource.DamageSource
 import net.minecraft.world.effect.MobEffects
 import net.minecraft.world.entity.Entity
@@ -69,6 +72,8 @@ import net.minecraft.world.entity.player.Player
 import net.minecraft.world.entity.projectile.arrow.AbstractArrow
 import net.minecraft.world.entity.vehicle.minecart.MinecartTNT
 import net.minecraft.world.item.ItemStack
+import net.minecraft.world.item.ItemUseAnimation
+import net.minecraft.world.item.ShieldItem
 import net.minecraft.world.item.component.UseEffects
 import net.minecraft.world.item.enchantment.Enchantments
 import net.minecraft.world.level.ClipContext
@@ -201,8 +206,33 @@ fun LocalPlayer.getMovementDirectionOfInput(input: DirectionalInput = Directiona
     return getMovementDirectionOfInput(this.yRot, input)
 }
 
-val Player.isBlockAction: Boolean
-    get() = isUsingItem && useItem.has(DataComponents.BLOCKS_ATTACKS)
+val LivingEntity.usingItemOrNull: ItemStack?
+    get() = if (isUsingItem) useItem else null
+
+fun LivingEntity.isInHand(itemStack: ItemStack?, hand: InteractionHand) =
+    this.getItemInHand(hand) === itemStack
+
+val LivingEntity.isBlockAction: Boolean
+    get() = usingItemOrNull?.useAnimation === ItemUseAnimation.BLOCK
+
+val LivingEntity.isBlockingServerside: Boolean
+    get() {
+        if (this.isBlocking) return true
+
+        // 1.8 server + 1.9~1.21.4 protocol
+        if (this.isUsingItem && !isBlocksAttacksExisting) {
+            val usingItem = this.useItem
+
+            // I don't know why but if you join 1.8 server with 1.21.11 client + 1.20.x protocol [useItem] will be same as [mainHandItem]
+            if (isInHand(usingItem, InteractionHand.MAIN_HAND) && usingItem.isSword ||
+                isInHand(usingItem, InteractionHand.OFF_HAND) && usingItem.item is ShieldItem
+            ) {
+                return true
+            }
+        }
+
+        return false
+    }
 
 inline fun LocalPlayer.setDeltaMovement(block: (Vec3) -> Vec3) {
     this.deltaMovement = block(this.deltaMovement)
@@ -295,6 +325,7 @@ fun getMovementDirectionOfInput(facingYaw: Float, input: DirectionalInput = Dire
             actualYaw += 180f
             -0.5f
         }
+
         input.forwards && !input.backwards -> 0.5f
         else -> 1f
     }
@@ -443,12 +474,15 @@ fun LivingEntity.getEffectiveDamage(
                 Difficulty.PEACEFUL -> {
                     amount = 0.0f
                 }
+
                 Difficulty.EASY -> {
                     amount = (amount / 2.0f + 1.0f).coerceAtMost(amount)
                 }
+
                 Difficulty.HARD -> {
                     amount = amount * 3.0f / 2.0f
                 }
+
                 else -> {}
             }
         }
@@ -500,6 +534,7 @@ fun LivingEntity.getExplosionDamageFromEntity(entity: Entity): Float {
             damageDistance = 144f,
             damageSource = Explosion.getDefaultDamageSource(this.level(), entity)
         )
+
         is PrimedTnt -> getDamageFromExplosion(
             pos = entity.position().add(0.0, 0.0625, 0.0),
             power = 4f,
@@ -507,6 +542,7 @@ fun LivingEntity.getExplosionDamageFromEntity(entity: Entity): Float {
             damageDistance = 64f,
             damageSource = Explosion.getDefaultDamageSource(this.level(), entity)
         )
+
         is MinecartTNT -> getDamageFromExplosion(
             pos = entity.position(),
             power = entity.getMaximumPotentialExplosionPower(),
