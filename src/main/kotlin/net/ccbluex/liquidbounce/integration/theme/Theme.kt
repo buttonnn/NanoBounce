@@ -38,11 +38,11 @@ import net.ccbluex.liquidbounce.integration.theme.component.HudComponent
 import net.ccbluex.liquidbounce.integration.theme.component.HudComponentFactory.JsonHudComponentFactory
 import net.ccbluex.liquidbounce.render.FontManager
 import net.ccbluex.liquidbounce.render.engine.type.Color4b
-import net.ccbluex.liquidbounce.utils.client.capitalize
+import net.ccbluex.liquidbounce.utils.text.capitalize
 import net.ccbluex.liquidbounce.utils.kotlin.Minecraft
 import net.minecraft.server.packs.resources.ResourceManager
 import net.minecraft.server.packs.resources.ResourceManagerReloadListener
-import okhttp3.Headers
+import okhttp3.Headers.Companion.headersOf
 import org.apache.logging.log4j.LogManager
 import org.apache.logging.log4j.Logger
 import java.io.Closeable
@@ -59,12 +59,10 @@ import java.util.Locale
 class Theme private constructor(val origin: Origin, url: String) :
     BaseApi(
         url.removeSuffix("/"),
-        defaultHeaders = Headers.Builder()
-            .add(
-                HttpHeaderNames.COOKIE.toString(),
-                "${AuthMiddleware.AUTH_COOKIE_NAME}=${ClientInteropServer.AUTH_CODE}"
-            )
-            .build()
+        defaultHeaders = headersOf(
+            HttpHeaderNames.COOKIE.toString(),
+            "${AuthMiddleware.AUTH_COOKIE_NAME}=${ClientInteropServer.AUTH_CODE}",
+        )
     ), Closeable, ResourceManagerReloadListener {
 
     enum class Origin(override val tag: String, val external: Boolean) : Tagged {

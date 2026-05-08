@@ -24,7 +24,7 @@ import net.ccbluex.fastutil.component1
 import net.ccbluex.fastutil.component2
 import net.ccbluex.fastutil.longDoubleHashMapOf
 import net.ccbluex.fastutil.mapToArray
-import net.ccbluex.liquidbounce.utils.client.toDegrees
+import net.ccbluex.liquidbounce.utils.math.toDegrees
 import net.minecraft.util.Mth
 import net.minecraft.util.Mth.wrapDegrees
 import net.minecraft.world.level.ChunkPos
@@ -152,7 +152,7 @@ object StrongholdBayesianEstimator {
         val candidates = chunkWeights.long2DoubleEntrySet()
             .mapToArray {
                 PosteriorCandidate(
-                    ChunkPos(it.longKey),
+                    ChunkPos.unpack(it.longKey),
                     it.doubleValue / weightSum,
                 )
             }.ifEmpty { return null }

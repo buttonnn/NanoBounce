@@ -34,7 +34,6 @@ import net.ccbluex.liquidbounce.utils.client.isBlocksAttacksExisting
 import net.ccbluex.liquidbounce.utils.client.isOlderThanOrEqual1_8
 import net.ccbluex.liquidbounce.utils.client.mc
 import net.ccbluex.liquidbounce.utils.client.player
-import net.ccbluex.liquidbounce.utils.client.toRadians
 import net.ccbluex.liquidbounce.utils.item.getEnchantment
 import net.ccbluex.liquidbounce.utils.item.isSword
 import net.ccbluex.liquidbounce.utils.math.allEmpty
@@ -78,6 +77,7 @@ import net.minecraft.world.item.component.UseEffects
 import net.minecraft.world.item.enchantment.Enchantments
 import net.minecraft.world.level.ClipContext
 import net.minecraft.world.level.Explosion
+import net.minecraft.world.level.GameType
 import net.minecraft.world.level.Level
 import net.minecraft.world.level.ServerExplosion
 import net.minecraft.world.level.block.Blocks
@@ -146,7 +146,7 @@ private fun LivingEntity.getBlockedDamage(source: DamageSource, damageAmount: Fl
     val itemStack = itemBlockingWith ?: return 0.0F
     val blocksAttacks = itemStack[DataComponents.BLOCKS_ATTACKS] ?: return 0.0F
 
-    if (blocksAttacks.bypassedBy().orElse(null)?.let(source::`is`) ?: false) {
+    if (blocksAttacks.bypassedBy().orElse(null)?.contains(source.typeHolder()) ?: false) {
         return 0.0F
     }
 
@@ -185,6 +185,13 @@ val ClientInput.initial: Input
 
 val Player.ping: Int
     get() = mc.connection?.getPlayerInfo(uuid)?.latency ?: 0
+
+fun GameType.shortName(): String = when (this) {
+    GameType.SURVIVAL -> "S"
+    GameType.CREATIVE -> "C"
+    GameType.ADVENTURE -> "A"
+    GameType.SPECTATOR -> "S"
+}
 
 val LocalPlayer.airTicks: Int
     get() = (this as LocalPlayerAddition).`liquid_bounce$getAirTicks`()
@@ -234,10 +241,6 @@ val LivingEntity.isBlockingServerside: Boolean
         return false
     }
 
-inline fun LocalPlayer.setDeltaMovement(block: (Vec3) -> Vec3) {
-    this.deltaMovement = block(this.deltaMovement)
-}
-
 /**
  * @see LocalPlayer.isSlowDueToUsingItem
  */
@@ -261,7 +264,6 @@ fun LocalPlayer.isCloseToEdge(
     distance: Double = 0.1,
     pos: Vec3 = this.position(),
 ): Boolean {
-    val alpha = (getMovementDirectionOfInput(directionalInput) + 90.0F).toRadians()
     val simulatedInput = SimulatedPlayer.SimulatedPlayerInput.fromClientPlayer(directionalInput)
     simulatedInput.set(
         jump = false,
@@ -277,9 +279,10 @@ fun LocalPlayer.isCloseToEdge(
 
     val nextVelocity = simulatedPlayer.deltaMovement
     val direction = if (nextVelocity.horizontalDistanceSqr() > 0.003 * 0.003) {
-        nextVelocity.multiply(1.0, 0.0, 1.0).normalize()
+        nextVelocity.copy(y = 0.0).normalize()
     } else {
-        Vec3(cos(alpha).toDouble(), 0.0, sin(alpha).toDouble())
+        val movementYaw = getMovementDirectionOfInput(directionalInput)
+        Vec3.directionFromRotation(0.0F, movementYaw)
     }
 
     val from = pos.add(0.0, -0.1, 0.0)
@@ -289,7 +292,7 @@ fun LocalPlayer.isCloseToEdge(
         return true
     }
 
-    val playerPosInTwoTicks = simulatedPlayer.pos.add(nextVelocity.multiply(1.0, 0.0, 1.0))
+    val playerPosInTwoTicks = simulatedPlayer.pos.add(nextVelocity.copy(y = 0.0))
 
     return wouldBeCloseToFallOff(pos) || wouldBeCloseToFallOff(playerPosInTwoTicks)
 }

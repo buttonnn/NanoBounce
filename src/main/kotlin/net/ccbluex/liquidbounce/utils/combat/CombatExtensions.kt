@@ -43,21 +43,24 @@ import net.ccbluex.liquidbounce.utils.world.getEntitiesInCuboid
 import net.minecraft.client.CameraType
 import net.minecraft.client.multiplayer.ClientLevel
 import net.minecraft.core.component.DataComponents
-import net.minecraft.network.protocol.game.ServerboundInteractPacket
+import net.minecraft.network.protocol.game.ServerboundAttackPacket
 import net.minecraft.sounds.SoundEvents
 import net.minecraft.world.InteractionHand
 import net.minecraft.world.entity.AgeableMob
 import net.minecraft.world.entity.Attackable
 import net.minecraft.world.entity.Entity
+import net.minecraft.world.entity.ExperienceOrb
 import net.minecraft.world.entity.LivingEntity
 import net.minecraft.world.entity.NeutralMob
 import net.minecraft.world.entity.ai.attributes.Attributes
 import net.minecraft.world.entity.ambient.Bat
 import net.minecraft.world.entity.animal.allay.Allay
 import net.minecraft.world.entity.animal.fish.WaterAnimal
+import net.minecraft.world.entity.item.ItemEntity
 import net.minecraft.world.entity.monster.Enemy
 import net.minecraft.world.entity.monster.Monster
 import net.minecraft.world.entity.player.Player
+import net.minecraft.world.entity.projectile.arrow.AbstractArrow
 import net.minecraft.world.level.GameType
 import net.minecraft.world.phys.Vec3
 
@@ -169,6 +172,17 @@ fun Entity?.shouldBeAttacked(enemyConf: Set<Targets> = GlobalSettingsTarget.comb
     this is Attackable && enemyConf.shouldAttack(this)
 
 /**
+ * Mirrors the vanilla server-side invalid attack disconnect checks
+ *
+ * @see net.minecraft.server.network.ServerGamePacketListenerImpl.handleAttack
+ */
+private fun Entity.canBeAttackedWithVanillaPacket() =
+    this !is ItemEntity &&
+        this !is ExperienceOrb &&
+        this !== player &&
+        (this !is AbstractArrow || this.isAttackable)
+
+/**
  * Find the best enemy in the current world in a specific range.
  */
 @JvmOverloads
@@ -225,7 +239,7 @@ inline fun ClientLevel.getEntitiesBoxInRange(
 /**
  * @see net.minecraft.client.Minecraft.startAttack
  */
-@Suppress("CognitiveComplexMethod", "NestedBlockDepth", "MagicNumber")
+@Suppress("CognitiveComplexMethod")
 fun attackEntity(entity: Entity, swing: SwingMode, keepSprint: Boolean = false) {
     val itemStack = player.getItemInHand(InteractionHand.MAIN_HAND)
     val piercingWeapon = itemStack.get(DataComponents.PIERCING_WEAPON)
@@ -238,7 +252,8 @@ fun attackEntity(entity: Entity, swing: SwingMode, keepSprint: Boolean = false) 
         return
     }
 
-    if (EventManager.callEvent(AttackEntityEvent(entity)).isCancelled) {
+    if (!entity.canBeAttackedWithVanillaPacket()
+        || EventManager.callEvent(AttackEntityEvent(entity)).isCancelled) {
         return
     }
 
@@ -249,7 +264,7 @@ fun attackEntity(entity: Entity, swing: SwingMode, keepSprint: Boolean = false) 
         }
 
         interaction.ensureHasSentCarriedItem()
-        network.send(ServerboundInteractPacket.createAttackPacket(entity, isShiftKeyDown))
+        network.send(ServerboundAttackPacket(entity.id))
 
         if (keepSprint) {
             var genericAttackDamage =

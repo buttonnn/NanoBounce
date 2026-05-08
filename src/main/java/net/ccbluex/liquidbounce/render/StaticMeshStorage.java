@@ -20,11 +20,15 @@
 package net.ccbluex.liquidbounce.render;
 
 import com.mojang.blaze3d.buffers.GpuBuffer;
+import com.mojang.blaze3d.buffers.GpuBufferSlice;
 import com.mojang.blaze3d.pipeline.RenderPipeline;
 import com.mojang.blaze3d.systems.RenderPass;
+import com.mojang.blaze3d.systems.RenderSystem;
+import com.mojang.blaze3d.buffers.Std140Builder;
 import com.mojang.blaze3d.vertex.ByteBufferBuilder;
 import com.mojang.blaze3d.vertex.MeshData;
 import net.ccbluex.liquidbounce.render.mesh.MeshDraw;
+import net.minecraft.core.BlockPos;
 import org.jspecify.annotations.Nullable;
 
 /**
@@ -36,11 +40,20 @@ import org.jspecify.annotations.Nullable;
  */
 public final class StaticMeshStorage {
 
+    /**
+     * Align block positions to 4096 to reduce writing to buffer.
+     */
+    private static final int BASE_BLOCK_POS_MASK = ~0xFFF;
+
     public final ByteBufferBuilder byteBufferBuilder = new ByteBufferBuilder(0xC0000);
     private final GrowableMappableRingBuffer vboStorage;
     private final GrowableMappableRingBuffer iboStorage;
+    private final GpuBufferSlice baseBlockPosUniform;
 
     private @Nullable MeshDraw meshDraw;
+    private long baseBlockPosAsLong;
+    private final BlockPos.MutableBlockPos baseBlockPos = new BlockPos.MutableBlockPos();
+    private boolean hasBaseBlockPosUniformValue;
 
     public final String label;
 
@@ -53,11 +66,51 @@ public final class StaticMeshStorage {
             label + " IBO",
             GpuBuffer.USAGE_INDEX
         );
+        this.baseBlockPosUniform = ClientUniformDefine.MESH_BASE_BLOCK_POS.createSingleBuffer(() -> label + " BaseBlockPos UBO");
         this.label = label;
     }
 
     public boolean isReady() {
         return this.meshDraw != null;
+    }
+
+    public void bindUniform(RenderPass renderPass) {
+        ClientUniformDefine.MESH_BASE_BLOCK_POS.setTo(renderPass, this.baseBlockPosUniform);
+    }
+
+    /**
+     * Resolve the mesh origin used for this build.
+     *
+     * <p>If the requested origin is close enough to the current origin, this reuses the current origin
+     * to avoid rewriting the base block position uniform. The returned origin must be used when building
+     * vertex positions for this mesh.</p>
+     */
+    public BlockPos resolveBaseBlockPos(BlockPos base) {
+        long normalized = normalize(base);
+        if (this.hasBaseBlockPosUniformValue && this.baseBlockPosAsLong == normalized) {
+            return this.baseBlockPos;
+        }
+
+        this.baseBlockPosAsLong = normalized;
+        this.baseBlockPos.set(normalized);
+        this.writeBaseBlockPosUniform(this.baseBlockPos);
+        this.hasBaseBlockPosUniformValue = true;
+        return this.baseBlockPos;
+    }
+
+    private static long normalize(BlockPos pos) {
+        return BlockPos.asLong(
+            pos.getX() & BASE_BLOCK_POS_MASK,
+            pos.getY() & BASE_BLOCK_POS_MASK,
+            pos.getZ() & BASE_BLOCK_POS_MASK
+        );
+    }
+
+    private void writeBaseBlockPosUniform(BlockPos baseBlockPos) {
+        try (var view = RenderSystem.getDevice().createCommandEncoder().mapBuffer(this.baseBlockPosUniform, false, true)) {
+            Std140Builder.intoBuffer(view.data())
+                .putIVec3(baseBlockPos.getX(), baseBlockPos.getY(), baseBlockPos.getZ());
+        }
     }
 
     /**
@@ -77,7 +130,7 @@ public final class StaticMeshStorage {
             this.iboStorage.rotate();
         }
 
-        this.meshDraw = MeshDraw.create(meshData, pipeline, v -> this.vboStorage, i -> this.iboStorage);
+        this.meshDraw = MeshDraw.create(meshData, pipeline, _ -> this.vboStorage, _ -> this.iboStorage);
     }
 
     /**

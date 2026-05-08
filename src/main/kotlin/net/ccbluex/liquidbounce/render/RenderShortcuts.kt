@@ -31,6 +31,7 @@ import net.ccbluex.liquidbounce.render.engine.type.Color4b
 import net.ccbluex.liquidbounce.render.engine.type.Vec3f
 import net.ccbluex.liquidbounce.render.utils.DistanceFadeUniformValueGroup
 import net.ccbluex.liquidbounce.render.utils.UnitCircle
+import net.ccbluex.liquidbounce.utils.client.gpuDevice
 import net.ccbluex.liquidbounce.utils.client.mc
 import net.ccbluex.liquidbounce.utils.render.writeStd140
 import net.minecraft.client.Camera
@@ -43,7 +44,6 @@ import net.minecraft.world.phys.Vec3
 import net.minecraft.world.phys.shapes.VoxelShape
 import org.joml.Vector3f
 import org.joml.Vector3fc
-import org.lwjgl.opengl.GL11C
 
 /**
  * This variable should be used when rendering long lines, meaning longer than ~2 in 3d.
@@ -56,8 +56,8 @@ import org.lwjgl.opengl.GL11C
  * But as of now, 01.02.2025, they haven't.
  */
 @JvmField
-val HAS_AMD_VEGA_APU = (GL11C.glGetString(GL11C.GL_RENDERER)?.startsWith("AMD Radeon(TM) RX Vega") ?: false) &&
-    GL11C.glGetString(GL11C.GL_VENDOR) == "ATI Technologies Inc."
+val HAS_AMD_VEGA_APU = (gpuDevice.renderer?.startsWith("AMD Radeon(TM) RX Vega") ?: false) &&
+    gpuDevice.vendor == "ATI Technologies Inc."
 
 @JvmField
 val FULL_BOX = AABB(0.0, 0.0, 0.0, 1.0, 1.0, 1.0)
@@ -88,7 +88,6 @@ inline fun renderEnvironmentForWorld(
     camera: Camera = mc.gameRenderer.mainCamera,
     draw: WorldRenderEnvironment.() -> Unit,
 ) {
-    GL11C.glEnable(GL11C.GL_LINE_SMOOTH)
     val environment = WorldRenderEnvironment.create(renderTarget, poseStack, camera)
     try {
         when (mode) {
@@ -97,7 +96,6 @@ inline fun renderEnvironmentForWorld(
         }
     } finally {
         environment.flushBatchIfLocalEnvironment()
-        GL11C.glDisable(GL11C.GL_LINE_SMOOTH)
     }
 }
 
@@ -128,18 +126,6 @@ inline fun WorldRenderEnvironment.withPositionRelativeToCamera(pos: Vec3i, draw:
     }
 }
 
-/**
- * Disables [GL11C.GL_LINE_SMOOTH] if [HAS_AMD_VEGA_APU].
- */
-inline fun WorldRenderEnvironment.longLines(draw: WorldRenderEnvironment.() -> Unit) {
-    if (HAS_AMD_VEGA_APU) GL11C.glDisable(GL11C.GL_LINE_SMOOTH)
-    try {
-        draw()
-    } finally {
-        if (HAS_AMD_VEGA_APU) GL11C.glEnable(GL11C.GL_LINE_SMOOTH)
-    }
-}
-
 internal inline fun RenderTarget.drawGenericBlockESP(
     renderState: StaticMeshStorage,
     pipeline: RenderPipeline,
@@ -156,6 +142,7 @@ internal inline fun RenderTarget.drawGenericBlockESP(
         pass.bindProjectionUniform()
         pass.bindGlobalsUniform()
         pass.bindDynamicTransformsUniform(dynamicTransforms)
+        renderState.bindUniform(pass)
         distanceFade.bindUniform(pass)
         renderState.bindAndDraw(pass)
     }

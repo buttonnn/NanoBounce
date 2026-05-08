@@ -32,10 +32,9 @@ import net.ccbluex.liquidbounce.utils.entity.cameraDistanceSq
 import net.ccbluex.liquidbounce.utils.kotlin.EventPriorityConvention.FIRST_PRIORITY
 import net.ccbluex.liquidbounce.utils.render.entity
 import net.ccbluex.liquidbounce.utils.render.isCustom
-import net.minecraft.client.gui.GuiGraphics
+import net.minecraft.client.gui.GuiGraphicsExtractor
 import net.minecraft.client.renderer.entity.state.EntityRenderState
 import org.joml.Vector2f
-import org.joml.Vector2fc
 
 /**
  * Nametags module
@@ -47,7 +46,6 @@ object ModuleNametags : ClientModule("Nametags", ModuleCategories.RENDER) {
     init {
         tree(NametagTextFormatter)
         tree(NametagEquipment)
-        tree(NametagEnchantmentRenderer)
     }
 
     internal val border by boolean("Border", true)
@@ -57,7 +55,6 @@ object ModuleNametags : ClientModule("Nametags", ModuleCategories.RENDER) {
         xAxis = "Distance" axis 0f..200f,
         yAxis = "Scale" axis 0.25f..4f,
     )
-    internal val drawnEnchantmentAreas = mutableListOf<Vector2fc>()
 
     val fontRenderer
         get() = FontManager.FONT_RENDERER
@@ -86,9 +83,7 @@ object ModuleNametags : ClientModule("Nametags", ModuleCategories.RENDER) {
         event.context.drawNametags(event.tickDelta)
     }
 
-    private fun GuiGraphics.drawNametags(tickDelta: Float) {
-        drawnEnchantmentAreas.clear()
-
+    private fun GuiGraphicsExtractor.drawNametags(tickDelta: Float) {
         for (nametagInfo in nametagsToRender) {
             val (x, y) = nametagInfo.calculateScreenPos(tickDelta) ?: continue
 
@@ -116,7 +111,7 @@ object ModuleNametags : ClientModule("Nametags", ModuleCategories.RENDER) {
     }
 
     private val NAMETAG_COMPARATOR: Comparator<NametagRenderState> = Comparator.comparingDouble { nametag ->
-        nametag.entity!!.position().cameraDistanceSq()
+        nametag.entity?.position()?.cameraDistanceSq() ?: Double.POSITIVE_INFINITY
     }
 
     fun shouldRenderVanillaNametag(state: EntityRenderState): Boolean {
